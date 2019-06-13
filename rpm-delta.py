@@ -74,6 +74,21 @@ def create_blob_from_rpm(in_rpm, out_blob):
     hdr = get_rpm_header(in_rpm)
     blob = open(out_blob, "wb")
 
+    cpio_index = {}
+    cpio = cpioarchive.CpioArchive(name=rpm_cpio)
+    for cpio_fileobj in cpio:
+        cpio_path = cpio_fileobj.name
+
+        # fix path, turn it into absolute path
+        if cpio_path.startswith("./"):
+            cpio_path = cpio_path[1:]
+
+        cpio_index[cpio_path] = (cpio_fileobj.datastart, cpio_fileobj.size)
+        cpio_fileobj.close()
+
+    cpio.close()
+
+    cpio = open(rpm_cpio, "rb")
     for num, rpm_file in enumerate(hdr[rpm.RPMTAG_FILENAMES]):
         rpm_file = rpm_file.decode("utf8")
         is_config = bool(hdr[rpm.RPMTAG_FILEFLAGS][num] & rpm.RPMFILE_CONFIG)
@@ -86,26 +101,10 @@ def create_blob_from_rpm(in_rpm, out_blob):
         if is_symlink:
             continue
 
-        # this is highly inefficient, just for demonstration purposes
-        cpio = cpioarchive.CpioArchive(name=rpm_cpio)
-        found = False
-        for cpio_fileobj in cpio:
-            cpio_path = cpio_fileobj.name
-
-            # fix path, turn it into absolute path
-            if cpio_path.startswith("./"):
-                cpio_path = cpio_path[1:]
-
-            if rpm_file == cpio_path:
-                found = True
-                blob.write(cpio_fileobj.read())
-                cpio_fileobj.close()
-                break
-            cpio_fileobj.close()
-        cpio.close()
-
-        if not found:
-            raise RuntimeError("File not found in the cpio archive: %s" % rpm_file)
+        pos, size = cpio_index[rpm_file]
+        cpio.seek(pos)
+        blob.write(cpio.read(size))
+    cpio.close()
 
     blob.close()
 
