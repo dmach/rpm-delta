@@ -91,11 +91,16 @@ def create_blob_from_rpm(in_rpm, out_blob):
     cpio = open(rpm_cpio, "rb")
     for num, rpm_file in enumerate(hdr[rpm.RPMTAG_FILENAMES]):
         rpm_file = rpm_file.decode("utf8")
-        is_config = bool(hdr[rpm.RPMTAG_FILEFLAGS][num] & rpm.RPMFILE_CONFIG)
+        file_flags = hdr[rpm.RPMTAG_FILEFLAGS][num]
+        is_config = bool(file_flags & rpm.RPMFILE_CONFIG)
+        is_ghost = bool(file_flags & rpm.RPMFILE_GHOST)
         is_symlink = bool(hdr[rpm.RPMTAG_FILELINKTOS][num])
 
         # config files frequently change -> don't include them in delta source
         if is_config:
+            continue
+
+        if is_ghost:
             continue
 
         if is_symlink:
@@ -115,11 +120,16 @@ def create_blob_from_system(out_blob, name, arch):
 
     for num, rpm_file in enumerate(hdr[rpm.RPMTAG_FILENAMES]):
         rpm_file = rpm_file.decode("utf8")
-        is_config = bool(hdr[rpm.RPMTAG_FILEFLAGS][num] & rpm.RPMFILE_CONFIG)
+        file_flags = hdr[rpm.RPMTAG_FILEFLAGS][num]
+        is_config = bool(file_flags & rpm.RPMFILE_CONFIG)
+        is_ghost = bool(file_flags & rpm.RPMFILE_GHOST)
         is_symlink = bool(hdr[rpm.RPMTAG_FILELINKTOS][num])
 
         # config files frequently change -> don't include them in delta source
         if is_config:
+            continue
+
+        if is_ghost:
             continue
 
         if is_symlink:
