@@ -46,7 +46,7 @@ def rpm_delta_make(in_oldrpm, in_newrpm, out_delta):
     in_newrpm_cpio = in_newrpm + ".cpio"
     run(["./rpm_split", in_newrpm, in_newrpm_hdr, in_newrpm_cpio])
 
-    run(["xdelta", "-f", "-e", "-s", in_oldrpm_blob, in_newrpm_cpio, out_delta])
+    run(["xdelta", "-f", "-B", "2147483648", "-W", "67108864", "-e", "-s", in_oldrpm_blob, in_newrpm_cpio, out_delta])
 
 
 def rpm_delta_apply(in_oldrpm, in_delta, in_newrpm_hdr, out_newrpm):
